@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Click To Add Flowers 🌸</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#000}
+body{font-family:Georgia,"Times New Roman",serif;cursor:crosshair}
+canvas{display:block;width:100vw;height:100vh}
+#hint{position:fixed;inset:0;display:grid;place-items:center;color:#eee;
+font-size:clamp(22px,4vw,40px);pointer-events:none;text-shadow:0 2px 8px #000;
+transition:opacity .7s}
+#qr{position:fixed;right:18px;bottom:18px;width:115px;padding:10px;background:#fff;
+border-radius:10px;display:none;box-shadow:0 0 20px #fff8}
+#qr img{width:100%;display:block}
+#qr small{display:block;text-align:center;color:#111;margin-top:5px;font:11px Arial}
+#code{position:fixed;left:18px;bottom:18px;color:#9f9;font:12px monospace;opacity:.65}
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<div id="hint">Click To Add Flowers</div>
+<div id="code">For full source code • scan the QR code at the end</div>
+<div id="qr">
+  <img id="qrImg" alt="QR">
+  <small>Open this garden</small>
+</div>
+<script>
+const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+let W,H,DPR,flowers=[],t=0;
+function resize(){
+ DPR=Math.min(devicePixelRatio||1,2); W=innerWidth; H=innerHeight;
+ canvas.width=W*DPR; canvas.height=H*DPR; canvas.style.width=W+"px";canvas.style.height=H+"px";
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+addEventListener("resize",resize);resize();
+
+function flower(x,y){
+ const base=H+15, h=Math.max(100,base-y), hue=20+Math.random()*55;
+ return {x,y,base,h,phase:Math.random()*7,scale:.65+Math.random()*.65,hue,
+  petals:5+Math.floor(Math.random()*3)};
+}
+function addFlower(x,y){
+ flowers.push(flower(x,y));
+ if(flowers.length>35) flowers.shift();
+ document.getElementById("hint").style.opacity=flowers.length?0:1;
+}
+function drawStem(f){
+ const sway=Math.sin(t*.8+f.phase)*18;
+ ctx.save();ctx.lineCap="round";
+ ctx.beginPath();ctx.moveTo(f.base,f.base);
+ ctx.strokeStyle="#477d37";ctx.lineWidth=2;
+ ctx.quadraticCurveTo(f.x-sway,f.base-f.h*.45,f.x+Math.sin(t+f.phase)*8,f.y);
+ ctx.stroke();
+ ctx.restore();
+}
+function drawFlower(f){
+ const bob=Math.sin(t*1.4+f.phase)*3, x=f.x, y=f.y+bob;
+ ctx.save();ctx.translate(x,y);ctx.scale(f.scale,f.scale);
+ const glow=ctx.createRadialGradient(0,0,1,0,0,35);
+ glow.addColorStop(0,"rgba(255,230,70,.8)");glow.addColorStop(1,"rgba(255,0,140,0)");
+ ctx.fillStyle=glow;ctx.beginPath();ctx.arc(0,0,35,0,Math.PI*2);ctx.fill();
+ for(let i=0;i<f.petals;i++){
+  ctx.rotate(Math.PI*2/f.petals);
+  let g=ctx.createRadialGradient(0,-11,2,0,-11,18);
+  g.addColorStop(0,"#ffe36e");g.addColorStop(.45,"#ff4fa3");g.addColorStop(1,"#8d16ff");
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(0,-12,8,19,0,0,Math.PI*2);ctx.fill();
+ }
+ ctx.fillStyle="#ffd83d";ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
+ ctx.restore();
+}
+function frame(){
+ t+=.016;ctx.clearRect(0,0,W,H);
+ flowers.forEach(drawStem);flowers.forEach(drawFlower);
+ requestAnimationFrame(frame);
+}
+canvas.addEventListener("click",e=>addFlower(e.clientX,e.clientY));
+canvas.addEventListener("touchstart",e=>{
+ const p=e.touches[0];addFlower(p.clientX,p.clientY);
+},{passive:true});
+
+// Demo flowers, like the reference image.
+[[.46,.43],[.72,.44],[.89,.55]].forEach(([a,b])=>addFlower(W*a,H*b));
+
+// QR points to this page when hosted online.
+const page=location.href;
+if(/^https?:/.test(page)){
+ document.getElementById("qrImg").src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(page);
+ document.getElementById("qr").style.display="block";
+}
+frame();
+</script>
+</body>
+</html>
